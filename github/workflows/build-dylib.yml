@@ -1,0 +1,36 @@
+name: Build iOS NeonMenu dylib
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-13
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Theos Style Environment
+        run: |
+          mkdir -p include/imgui
+          # تحميل مكتبة ImGui الأساسية للترجمة
+          curl -L https://githubusercontent.com -o include/imgui/imgui.h
+          curl -L https://githubusercontent.com -o include/imgui/imgui.cpp
+          curl -L https://githubusercontent.com -o include/imgui/imgui_internal.h
+          curl -L https://githubusercontent.com -o include/imgui/imstb_textedit.h
+          curl -L https://githubusercontent.com -o include/imgui/imstb_rectpack.h
+          curl -L https://githubusercontent.com -o include/imgui/imstb_truetype.h
+
+      - name: Compile dylib for iOS (arm64)
+        run: |
+          xcrun -sdk iphoneos clang++ -dynamiclib -arch arm64 -miphoneos-version-min=14.0 \
+            -I./include -I./include/imgui \
+            -framework UIKit -framework CoreGraphics -framework QuartzCore \
+            NeonMenu.mm NeonEntry.mm include/imgui/imgui.cpp \
+            -o NeonMenu.dylib
+
+      - name: Upload compiled dylib
+        uses: actions/upload-artifact@v3
+        with:
+          name: NeonMenu-dylib
+          path: NeonMenu.dylib
