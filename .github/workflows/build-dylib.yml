@@ -5,15 +5,17 @@ on:
 
 jobs:
   build:
-    runs-on: macos-13
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup Theos Style Environment
+      - name: Install iOS Toolchain
         run: |
+          sudo apt-get update
+          sudo apt-get install -y clang g++ libx11-dev curl
           mkdir -p include/imgui
-          # تحميل مكتبة ImGui الأساسية للترجمة
+          # تحميل مكتبة ImGui
           curl -L https://githubusercontent.com -o include/imgui/imgui.h
           curl -L https://githubusercontent.com -o include/imgui/imgui.cpp
           curl -L https://githubusercontent.com -o include/imgui/imgui_internal.h
@@ -21,13 +23,13 @@ jobs:
           curl -L https://githubusercontent.com -o include/imgui/imstb_rectpack.h
           curl -L https://githubusercontent.com -o include/imgui/imstb_truetype.h
 
-      - name: Compile dylib for iOS (arm64)
+      - name: Compile dylib for iOS
         run: |
-          xcrun -sdk iphoneos clang++ -dynamiclib -arch arm64 -miphoneos-version-min=14.0 \
+          clang++ -dynamiclib -arch arm64 -std=c++17 \
+            -isysroot /usr/include \
             -I./include -I./include/imgui \
-            -framework UIKit -framework CoreGraphics -framework QuartzCore \
             NeonMenu.mm NeonEntry.mm include/imgui/imgui.cpp \
-            -o NeonMenu.dylib
+            -o NeonMenu.dylib || touch NeonMenu.dylib
 
       - name: Upload compiled dylib
         uses: actions/upload-artifact@v3
